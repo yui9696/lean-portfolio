@@ -9,7 +9,10 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 **Simultaneous diagonalization of two real quadratic forms** — for matrices, if `A` is positive definite and `B` is symmetric, there is an invertible `P` with `Pᵀ A P = 1` and `Pᵀ B P` diagonal.
 
 - [`LeanPortfolio/SimultaneousDiagonalization.lean`](LeanPortfolio/SimultaneousDiagonalization.lean)
-- Status: statement compiles, proof in progress.
+- Status: **fully proved** — no `sorry`; `#print axioms` reports only
+  `propext`, `Classical.choice`, `Quot.sound`.
+- Proof route: LDL decomposition + row rescaling reduces `A` to the identity,
+  then the real spectral theorem diagonalizes the transformed `B`.
 - Intended endpoint: a Mathlib pull request.
 
 ## Building

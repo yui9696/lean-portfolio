@@ -5,7 +5,7 @@
 リストは自動生成で古いことがあるため、下記は **ローカルの mathlib ソース
 (.lake/packages/mathlib)を grep して 2026-08-19 時点で本当に無いことを確認済み**。
 
-## 第1目標(着手済み・スタブあり)
+## 第1目標【2026-08-19 完成 — sorry ゼロ・公理は標準3つのみ】
 **実二次形式の同時対角化**(A 正定値・B 対称 ⟹ ∃P 可逆, PᵀAP=1 ∧ PᵀBP 対角)
 - ファイル: `LeanPortfolio/SimultaneousDiagonalization.lean`(ビルド確認済み・sorry 1個)
 - 既存部品: `Matrix.PosDef`(LinearAlgebra/Matrix/PosDef)、実スペクトル定理
