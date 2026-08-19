@@ -1,0 +1,29 @@
+# ポートフォリオ用ターゲット(2026-08-19 裏取り済み)
+
+方針: 研究内容は一切使わない。題材は Mathlib 公式の未形式化リスト
+(https://leanprover-community.github.io/undergrad_todo.html)から選ぶ。
+リストは自動生成で古いことがあるため、下記は **ローカルの mathlib ソース
+(.lake/packages/mathlib)を grep して 2026-08-19 時点で本当に無いことを確認済み**。
+
+## 第1目標(着手済み・スタブあり)
+**実二次形式の同時対角化**(A 正定値・B 対称 ⟹ ∃P 可逆, PᵀAP=1 ∧ PᵀBP 対角)
+- ファイル: `LeanPortfolio/SimultaneousDiagonalization.lean`(ビルド確認済み・sorry 1個)
+- 既存部品: `Matrix.PosDef`(LinearAlgebra/Matrix/PosDef)、実スペクトル定理
+  `Matrix.IsHermitian.spectral_theorem`(Analysis/Matrix/Spectrum)
+- 近縁物: `Analysis/InnerProductSpace/JointEigenspace.lean` は「可換な自己随伴作用素の
+  同時対角化」で別物(こちらは可換性不要・計量を取り替えるのが肝)
+- 規模感: 1〜2週間。完成したら Mathlib PR 化(undergrad リスト掲載項目なので歓迎されやすい)
+
+## 第2候補
+**確率母関数 (PGF)** — `Mathlib/Probability/Moments/` に mgf/cgf はあるが PGF は皆無(grep 確認)。
+ℕ値確率変数の pgf 定義+収束半径+階乗モーメント+分布の一意性。中規模・自己完結。
+
+## 第3候補(大物・単独では2週間で終わらない)
+**ジョルダン標準形** — `JordanChevalley.lean`(半単純+冪零分解)はあるが標準形そのものは無い。
+着手するなら第1目標完了後に、広義固有空間分解からの積み上げで部分 PR を刻む。
+
+## 補足
+- 部分分数分解は `Algebra/Polynomial/PartialFractions.lean` が既にあり(冪つき互いに素分解まで済み)、
+  残るギャップは ℝ/ℂ での具体形と一意性のみ。見栄えの割に新規性が薄いので優先度下げ。
+- 有限アーベル群のフーリエ変換: 巡回群 (`Analysis/Fourier/ZMod.lean`) はあるが一般有限アーベル群は
+  未確認の可能性あり。第2候補の代替として調査価値あり。
