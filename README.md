@@ -12,6 +12,8 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 - Status: **fully proved** — no `sorry`; `#print axioms` reports only
   `propext`, `Classical.choice`, `Quot.sound`.
 - **Submitted to Mathlib:** [leanprover-community/mathlib4#42931](https://github.com/leanprover-community/mathlib4/pull/42931)
+- Also proved: the quadratic-form phrasing (one change of variables sends `A` to `∑ xᵢ ^ 2`
+  and `B` to `∑ dᵢ * xᵢ ^ 2`), and positivity of the `dᵢ` when `B` is positive definite too.
 - Proof route: LDL decomposition + row rescaling reduces `A` to the identity,
   then the real spectral theorem diagonalizes the transformed `B`.
 - Intended endpoint: a Mathlib pull request.
