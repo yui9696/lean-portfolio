@@ -4,7 +4,24 @@ Lean 4 / Mathlib formalization portfolio.
 
 Targets are chosen from the [missing undergraduate mathematics in Mathlib](https://leanprover-community.github.io/undergrad_todo.html) list, each verified against current Mathlib source before starting (see [TARGETS.md](TARGETS.md)).
 
-## Current target
+## Second target
+
+**Probability generating function** — for an `ℕ`-valued random variable `X`, the function
+`pgf X μ t = μ[t ^ X]`, mirroring Mathlib's `mgf` API. Absent from Mathlib as of 2026-08-30
+(re-verified against the current source under several names).
+
+- [`LeanPortfolio/ProbabilityGeneratingFunction.lean`](LeanPortfolio/ProbabilityGeneratingFunction.lean)
+- Status: **fully proved** — no `sorry`; `#print axioms` on every main theorem reports only
+  `propext`, `Classical.choice`, `Quot.sound`.
+- API: values at `0` and `1`, nonnegativity, monotonicity and boundedness on `[0, 1]`,
+  integrability of the integrand on `[-1, 1]`, congruence lemmas (a.e. equality and
+  `IdentDistrib`), the power-series form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
+- Main theorems: **the generating function determines the law**
+  (`map_eq_map_of_pgf_eq`, via radius-≥-1 power series and the uniqueness of power-series
+  coefficients), and the product formula for sums of independent variables
+  (`IndepFun.pgf_add`, `iIndepFun.pgf_sum`).
+
+## First target
 
 **Simultaneous diagonalization of two real quadratic forms** — for matrices, if `A` is positive definite and `B` is symmetric, there is an invertible `P` with `Pᵀ A P = 1` and `Pᵀ B P` diagonal.
 

@@ -14,9 +14,18 @@
   同時対角化」で別物(こちらは可換性不要・計量を取り替えるのが肝)
 - 規模感: 1〜2週間。完成したら Mathlib PR 化(undergrad リスト掲載項目なので歓迎されやすい)
 
-## 第2候補
-**確率母関数 (PGF)** — `Mathlib/Probability/Moments/` に mgf/cgf はあるが PGF は皆無(grep 確認)。
-ℕ値確率変数の pgf 定義+収束半径+階乗モーメント+分布の一意性。中規模・自己完結。
+## 第2目標【2026-08-30 完成 — sorry ゼロ・公理は標準3つのみ】
+**確率母関数 (PGF)** — `Mathlib/Probability/Moments/` に mgf/cgf はあるが PGF は皆無
+(2026-08-30 の mathlib checkout 9d89974763 で複数の検索語により再確認)。
+- ファイル: `LeanPortfolio/ProbabilityGeneratingFunction.lean`
+- 完成内容: `pgf X μ t = μ[t ^ X]` の定義+基本 API(t=0/1 の値・非負性・[0,1] 上の単調性と
+  有界性・[-1,1] 上の可積分性・a.e./IdentDistrib 合同)+冪級数表示 `pgf_eq_tsum`
+  +**分布の一意性 `map_eq_map_of_pgf_eq`**(係数有界 ⟹ 収束半径 ≥ 1 ⟹
+  `HasFPowerSeriesAt` の一意性で係数=点質量を回収)+独立和の積公式
+  (`IndepFun.pgf_add`・`iIndepFun.pgf_sum`)
+- 未着手の残り: 階乗モーメント(pgf の t=1 での微分)— MGFAnalytic 相当の解析機械が要るので
+  次の刻みに
+- Mathlib PR 化する場合の置き場: `Mathlib/Probability/Moments/Generating.lean` 相当
 
 ## 第3候補(大物・単独では2週間で終わらない)
 **ジョルダン標準形** — `JordanChevalley.lean`(半単純+冪零分解)はあるが標準形そのものは無い。
