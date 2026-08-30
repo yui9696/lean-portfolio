@@ -13,6 +13,7 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 - [`LeanPortfolio/ProbabilityGeneratingFunction.lean`](LeanPortfolio/ProbabilityGeneratingFunction.lean)
 - Status: **fully proved** — no `sorry`; `#print axioms` on every main theorem reports only
   `propext`, `Classical.choice`, `Quot.sound`.
+- **Submitted to Mathlib:** [leanprover-community/mathlib4#43229](https://github.com/leanprover-community/mathlib4/pull/43229)
 - API: values at `0` and `1`, nonnegativity, monotonicity and boundedness on `[0, 1]`,
   integrability of the integrand on `[-1, 1]`, congruence lemmas (a.e. equality and
   `IdentDistrib`), the power-series form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
