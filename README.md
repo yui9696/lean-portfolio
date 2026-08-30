@@ -18,8 +18,14 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
   `IdentDistrib`), the power-series form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
 - Main theorems: **the generating function determines the law**
   (`map_eq_map_of_pgf_eq`, via radius-≥-1 power series and the uniqueness of power-series
-  coefficients), and the product formula for sums of independent variables
-  (`IndepFun.pgf_add`, `iIndepFun.pgf_sum`).
+  coefficients), the product formula for sums of independent variables
+  (`IndepFun.pgf_add`, `iIndepFun.pgf_sum`), and the bridge to the moment-generating
+  function (`pgf_exp_eq_mgf`: `pgf X μ (exp s) = mgf X μ s`).
+- Worked examples in
+  [`LeanPortfolio/ProbabilityGeneratingFunctionExamples.lean`](LeanPortfolio/ProbabilityGeneratingFunctionExamples.lean):
+  closed forms for Mathlib's Poisson distribution (`pgf id Po(r) t = exp (r * (t - 1))`,
+  valid for every real `t`) and geometric distribution
+  (`pgf id (geometricMeasure p) t = p / (1 - (1 - p) * t)` on `[-1, 1]`).
 
 ## First target
 

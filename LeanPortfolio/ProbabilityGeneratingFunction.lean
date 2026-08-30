@@ -86,6 +86,11 @@ lemma pgf_congr_identDistrib {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {μ' : M
     pgf X μ = pgf Y μ' := by
   rw [← pgf_id_map h.aemeasurable_fst, ← pgf_id_map h.aemeasurable_snd, h.map_eq]
 
+/-- The generating function evaluated at `exp s` is the moment-generating function of `X`
+viewed as a real random variable. -/
+lemma pgf_exp_eq_mgf (s : ℝ) : pgf X μ (exp s) = mgf (fun ω => (X ω : ℝ)) μ s := by
+  simp only [pgf, mgf, ← Real.exp_nat_mul, mul_comm s]
+
 /-- For `|t| ≤ 1` the integrand defining `pgf` is integrable with respect to any finite
 measure: the generating function of an `ℕ`-valued variable is always defined on `[-1, 1]`. -/
 lemma integrable_pow_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :

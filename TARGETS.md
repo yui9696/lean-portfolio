@@ -23,6 +23,9 @@
   +**分布の一意性 `map_eq_map_of_pgf_eq`**(係数有界 ⟹ 収束半径 ≥ 1 ⟹
   `HasFPowerSeriesAt` の一意性で係数=点質量を回収)+独立和の積公式
   (`IndepFun.pgf_add`・`iIndepFun.pgf_sum`)
+- 追加済(2026-08-30 第2便): mgf への橋 `pgf_exp_eq_mgf`+具体分布の閉形式
+  (`ProbabilityGeneratingFunctionExamples.lean`: Poisson = exp(r(t−1)) 全実数 t・
+  幾何分布 = p/(1−(1−p)t) on [−1,1])
 - 未着手の残り: 階乗モーメント(pgf の t=1 での微分)— MGFAnalytic 相当の解析機械が要るので
   次の刻みに
 - Mathlib PR 化する場合の置き場: `Mathlib/Probability/Moments/Generating.lean` 相当
