@@ -5,6 +5,8 @@ Authors: Moe Tabei
 -/
 import Mathlib.Analysis.Analytic.OfScalars
 import Mathlib.Analysis.Analytic.Uniqueness
+import Mathlib.Analysis.Calculus.FDeriv.Analytic
+import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 import Mathlib.Probability.Moments.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
 
@@ -26,6 +28,10 @@ function `mgf`.
   integrand is integrable, so the generating function is defined on `[-1, 1]`.
 * `ProbabilityTheory.hasSum_pgf` and `ProbabilityTheory.pgf_eq_tsum`: the usual power-series
   form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
+* `ProbabilityTheory.hasFPowerSeriesAt_pgf` and `ProbabilityTheory.analyticAt_pgf`: near `0`
+  the generating function *is* the power series whose coefficients are the point masses.
+* `ProbabilityTheory.iteratedDeriv_pgf_zero`: the `n`-th derivative at `0` is
+  `n ! * μ.real (X ⁻¹' {n})`, so the derivatives at `0` recover the distribution.
 * `ProbabilityTheory.map_eq_map_of_pgf_eq`: the generating function determines the law —
   if two generating functions agree on `[-1, 1]`, the distributions coincide.
 * `ProbabilityTheory.IndepFun.pgf_add`: if `X` and `Y` are independent then
@@ -33,7 +39,7 @@ function `mgf`.
   version for finitely many independent variables.
 -/
 
-open MeasureTheory Filter Finset Real
+open MeasureTheory Filter Finset Real Nat
 
 noncomputable section
 
@@ -170,6 +176,16 @@ theorem hasFPowerSeriesAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) :
 towards derivatives of `pgf`, i.e. the factorial moments. -/
 lemma analyticAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) : AnalyticAt ℝ (pgf X μ) 0 :=
   (hasFPowerSeriesAt_pgf hX).analyticAt
+
+/-- **The derivatives at `0` recover the distribution**: the `n`-th derivative of the
+generating function at `0` is `n !` times the mass of `{X = n}`. -/
+theorem iteratedDeriv_pgf_zero [IsFiniteMeasure μ] (hX : Measurable X) (n : ℕ) :
+    iteratedDeriv n (pgf X μ) 0 = n ! * μ.real (X ⁻¹' {n}) := by
+  obtain ⟨r, hr⟩ := hasFPowerSeriesAt_pgf (μ := μ) hX
+  rw [iteratedDeriv_eq_iteratedFDeriv, ← hr.factorial_smul 1 n, nsmul_eq_mul]
+  congr 1
+  simpa using congrArg (fun x : ℝ => (n ! : ℝ) * x)
+    (coeff_ofScalars (𝕜 := ℝ) (p := fun n => μ.real (X ⁻¹' {n})) (n := n))
 
 /-- **The probability generating function determines the law.** If the generating functions
 of two `ℕ`-valued random variables with respect to finite measures agree on `[-1, 1]`, then

@@ -26,8 +26,13 @@
 - 追加済(2026-08-30 第2便): mgf への橋 `pgf_exp_eq_mgf`+具体分布の閉形式
   (`ProbabilityGeneratingFunctionExamples.lean`: Poisson = exp(r(t−1)) 全実数 t・
   幾何分布 = p/(1−(1−p)t) on [−1,1])
-- 未着手の残り: 階乗モーメント(pgf の t=1 での微分)— MGFAnalytic 相当の解析機械が要るので
-  次の刻みに
+- 追加済(2026-08-31): `hasFPowerSeriesAt_pgf`(0 の近傍で pgf = 点質量を係数とするべき級数)
+  ・`analyticAt_pgf`・**`iteratedDeriv_pgf_zero`(n 階微分 @0 = n! · P(X=n))**。
+  一意性定理はこれ経由に短縮。`HasFPowerSeriesOnBall.factorial_smul` + `coeff_ofScalars` で到達
+  ⚠️`hasFPowerSeriesAt_pgf` は μ が結論にしか現れないので `obtain` では `(μ := μ)` が要る
+- 未着手の残り: **階乗モーメント E[X(X−1)…(X−n+1)] = pgf^(n)(1)** — t=1 は収束半径のちょうど境界
+  なので Abel の定理相当が要る(0 での微分とは別物・0 での微分は上で解決済み)。
+  値が無限大になり得る点の扱いも設計が要る
 - Mathlib PR 化する場合の置き場: `Mathlib/Probability/Moments/Generating.lean` 相当
 
 ## 第3候補(大物・単独では2週間で終わらない)
