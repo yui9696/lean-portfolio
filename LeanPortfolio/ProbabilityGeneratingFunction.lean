@@ -153,6 +153,24 @@ private lemma hasFPowerSeriesAt_ofScalarsSum {c : ℕ → ℝ} {C : ℝ} (hc : �
   exact ((ofScalars ℝ c).hasFPowerSeriesOnBall
     (lt_of_lt_of_le zero_lt_one h_rad)).hasFPowerSeriesAt
 
+/-- Near `0`, the generating function is the power series whose coefficients are the point
+masses of `X`. -/
+theorem hasFPowerSeriesAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) :
+    HasFPowerSeriesAt (pgf X μ) (ofScalars ℝ fun n => μ.real (X ⁻¹' {n})) 0 := by
+  refine (hasFPowerSeriesAt_ofScalarsSum (C := μ.real Set.univ) fun n => ?_).congr ?_
+  · rw [abs_of_nonneg measureReal_nonneg]
+    exact measureReal_mono (Set.subset_univ _)
+  · filter_upwards [Metric.ball_mem_nhds (0 : ℝ) zero_lt_one] with t ht
+    rw [mem_ball_zero_iff, Real.norm_eq_abs] at ht
+    rw [ofScalars_sum_eq]
+    simp_rw [smul_eq_mul]
+    exact (pgf_eq_tsum hX ht.le).symm
+
+/-- The generating function of a finite measure is analytic at `0`; this is the entry point
+towards derivatives of `pgf`, i.e. the factorial moments. -/
+lemma analyticAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) : AnalyticAt ℝ (pgf X μ) 0 :=
+  (hasFPowerSeriesAt_pgf hX).analyticAt
+
 /-- **The probability generating function determines the law.** If the generating functions
 of two `ℕ`-valued random variables with respect to finite measures agree on `[-1, 1]`, then
 the two distributions agree. -/
@@ -160,26 +178,13 @@ theorem map_eq_map_of_pgf_eq {Ω' : Type*} {m' : MeasurableSpace Ω'} {ν : Meas
     {Y : Ω' → ℕ} [IsFiniteMeasure μ] [IsFiniteMeasure ν] (hX : Measurable X) (hY : Measurable Y)
     (h : ∀ t : ℝ, |t| ≤ 1 → pgf X μ t = pgf Y ν t) :
     μ.map X = ν.map Y := by
-  have hpa : HasFPowerSeriesAt (ofScalarsSum fun n => μ.real (X ⁻¹' {n}))
-      (ofScalars ℝ fun n => μ.real (X ⁻¹' {n})) 0 :=
-    hasFPowerSeriesAt_ofScalarsSum (C := μ.real Set.univ) fun n => by
-      rw [abs_of_nonneg measureReal_nonneg]
-      exact measureReal_mono (Set.subset_univ _)
-  have hpb : HasFPowerSeriesAt (ofScalarsSum fun n => ν.real (Y ⁻¹' {n}))
-      (ofScalars ℝ fun n => ν.real (Y ⁻¹' {n})) 0 :=
-    hasFPowerSeriesAt_ofScalarsSum (C := ν.real Set.univ) fun n => by
-      rw [abs_of_nonneg measureReal_nonneg]
-      exact measureReal_mono (Set.subset_univ _)
-  have h_eq : (ofScalarsSum fun n => μ.real (X ⁻¹' {n}))
-      =ᶠ[nhds (0 : ℝ)] ofScalarsSum fun n => ν.real (Y ⁻¹' {n}) := by
+  have h_eq : pgf X μ =ᶠ[nhds (0 : ℝ)] pgf Y ν := by
     filter_upwards [Metric.ball_mem_nhds (0 : ℝ) zero_lt_one] with t ht
     rw [mem_ball_zero_iff, Real.norm_eq_abs] at ht
-    rw [ofScalars_sum_eq, ofScalars_sum_eq]
-    simp_rw [smul_eq_mul]
-    rw [← pgf_eq_tsum hX ht.le, ← pgf_eq_tsum hY ht.le]
     exact h t ht.le
   have h_coeff := ofScalars_series_injective ℝ ℝ
-    (hpa.eq_formalMultilinearSeries_of_eventually hpb h_eq)
+    ((hasFPowerSeriesAt_pgf hX).eq_formalMultilinearSeries_of_eventually
+      (hasFPowerSeriesAt_pgf hY) h_eq)
   refine Measure.ext_of_singleton fun n => ?_
   rw [Measure.map_apply hX (measurableSet_singleton n),
     Measure.map_apply hY (measurableSet_singleton n)]

@@ -17,9 +17,11 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 - API: values at `0` and `1`, nonnegativity, monotonicity and boundedness on `[0, 1]`,
   integrability of the integrand on `[-1, 1]`, congruence lemmas (a.e. equality and
   `IdentDistrib`), the power-series form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
-- Main theorems: **the generating function determines the law**
-  (`map_eq_map_of_pgf_eq`, via radius-≥-1 power series and the uniqueness of power-series
-  coefficients), the product formula for sums of independent variables
+- Main theorems: `hasFPowerSeriesAt_pgf` / `analyticAt_pgf` (near `0` the generating function
+  *is* the power series whose coefficients are the point masses — the entry point towards
+  factorial moments), **the generating function determines the law**
+  (`map_eq_map_of_pgf_eq`, by the uniqueness of power-series coefficients), the product
+  formula for sums of independent variables
   (`IndepFun.pgf_add`, `iIndepFun.pgf_sum`), and the bridge to the moment-generating
   function (`pgf_exp_eq_mgf`: `pgf X μ (exp s) = mgf X μ s`).
 - Worked examples in
