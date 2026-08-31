@@ -24,8 +24,8 @@ function `mgf`.
 
 * `ProbabilityTheory.integrable_pow_pgf`: for `|t| ≤ 1` and a finite measure the defining
   integrand is integrable, so the generating function is defined on `[-1, 1]`.
-* `ProbabilityTheory.pgf_eq_tsum`: `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`, the
-  usual power-series form.
+* `ProbabilityTheory.hasSum_pgf` and `ProbabilityTheory.pgf_eq_tsum`: the usual power-series
+  form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
 * `ProbabilityTheory.map_eq_map_of_pgf_eq`: the generating function determines the law —
   if two generating functions agree on `[-1, 1]`, the distributions coincide.
 * `ProbabilityTheory.IndepFun.pgf_add`: if `X` and `Y` are independent then
@@ -113,20 +113,30 @@ lemma pgf_le_one [IsProbabilityMeasure μ] (hX : Measurable X) (ht₀ : 0 ≤ t)
   calc pgf X μ t ≤ pgf X μ 1 := pgf_mono hX ht₀ ht₁ le_rfl
     _ = 1 := pgf_one
 
-/-- Power-series form of the generating function:
-`pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`. -/
-lemma pgf_eq_tsum [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
-    pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n := by
+/-- Power-series form of the generating function: the point masses of `X` are the
+coefficients of the series summing to `pgf X μ t`. -/
+lemma hasSum_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
+    HasSum (fun n => μ.real (X ⁻¹' {n}) * t ^ n) (pgf X μ t) := by
   have h_int : Integrable (fun n : ℕ => t ^ n) (μ.map X) := by
     refine Integrable.mono' (integrable_const 1) Measurable.of_discrete.aestronglyMeasurable ?_
     filter_upwards with n
     rw [Real.norm_eq_abs, abs_pow]
     exact pow_le_one₀ (abs_nonneg t) ht
-  rw [pgf, ← integral_map hX.aemeasurable Measurable.of_discrete.aestronglyMeasurable,
-    integral_countable h_int]
-  refine tsum_congr fun n => ?_
-  rw [smul_eq_mul, Measure.real, Measure.map_apply hX (measurableSet_singleton n)]
-  rfl
+  rw [pgf, ← integral_map hX.aemeasurable Measurable.of_discrete.aestronglyMeasurable]
+  rw [← Measure.sum_smul_dirac (μ.map X)] at h_int ⊢
+  refine (hasSum_integral_measure h_int).congr_fun fun n => ?_
+  rw [integral_smul_measure, integral_dirac, smul_eq_mul,
+    Measure.real, Measure.map_apply hX (measurableSet_singleton n)]
+
+/-- Power-series form of the generating function:
+`pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`. -/
+lemma pgf_eq_tsum [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
+    pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n :=
+  (hasSum_pgf hX ht).tsum_eq.symm
+
+lemma summable_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
+    Summable fun n => μ.real (X ⁻¹' {n}) * t ^ n :=
+  (hasSum_pgf hX ht).summable
 
 section Uniqueness
 
