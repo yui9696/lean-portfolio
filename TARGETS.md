@@ -30,9 +30,16 @@
   ・`analyticAt_pgf`・**`iteratedDeriv_pgf_zero`(n 階微分 @0 = n! · P(X=n))**。
   一意性定理はこれ経由に短縮。`HasFPowerSeriesOnBall.factorial_smul` + `coeff_ofScalars` で到達
   ⚠️`hasFPowerSeriesAt_pgf` は μ が結論にしか現れないので `obtain` では `(μ := μ)` が要る
-- 未着手の残り: **階乗モーメント E[X(X−1)…(X−n+1)] = pgf^(n)(1)** — t=1 は収束半径のちょうど境界
-  なので Abel の定理相当が要る(0 での微分とは別物・0 での微分は上で解決済み)。
-  値が無限大になり得る点の扱いも設計が要る
+- **★2026-09-01: 第1階乗モーメント(=平均)まで到達** `tendsto_deriv_pgf_nhdsLT_one`:
+  X 可積分なら t→1⁻ で (pgf)'(t) → μ[X]。境界通過は Mathlib の Abel の定理
+  `Real.tendsto_tsum_powerSeries_nhdsWithin_lt`(`Analysis/Complex/AbelLimit.lean`)。
+  経路 = ①`hasSum_integral_comp`(∫f(X)を点質量の和にする一般補題・hasSum_pgf もこれから導出)
+  ②`hasDerivAt_pgf`(|t|<1 での項別微分・`hasDerivAt_tsum_of_isPreconnected` を半径 (|t|+1)/2 の
+  球上で使い M·n·r^(n-1) で優級数評価)③Abel を係数 n·P(X=n) に当て、
+  **∑ n p_n x^n = x·(pgf)'(x) の恒等式で添字ずらしを回避**(x で割って終わり)
+  ④`tendsto_pgf_nhdsLT_one`(左連続性)も同じ Abel から
+- 未着手の残り: **第 n 階乗モーメント E[X(X−1)…(X−n+1)]**(n≥2)。1 階の議論を反復すれば
+  出るはずだが、n 階導関数の級数表示を作る手間がある。値が ∞ の場合の扱いも設計が要る
 - Mathlib PR 化する場合の置き場: `Mathlib/Probability/Moments/Generating.lean` 相当
 
 ## 第3候補(大物・単独では2週間で終わらない)

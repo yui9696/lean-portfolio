@@ -35,6 +35,12 @@ function `mgf`.
   the generating function *is* the power series whose coefficients are the point masses.
 * `ProbabilityTheory.iteratedDeriv_pgf_zero`: the `n`-th derivative at `0` is
   `n ! * μ.real (X ⁻¹' {n})`, so the derivatives at `0` recover the distribution.
+* `ProbabilityTheory.hasDerivAt_pgf`: inside the open unit interval the series may be
+  differentiated term by term.
+* `ProbabilityTheory.tendsto_pgf_nhdsLT_one` and
+  `ProbabilityTheory.tendsto_deriv_pgf_nhdsLT_one`: the boundary results at `1`, via Abel's
+  limit theorem — the generating function is left-continuous at `1`, and its derivative
+  tends to the mean `μ[X]`.
 * `ProbabilityTheory.map_eq_map_of_pgf_eq`: the generating function determines the law —
   if two generating functions agree on `[-1, 1]`, the distributions coincide.
 * `ProbabilityTheory.IndepFun.pgf_add`: if `X` and `Y` are independent then
@@ -125,20 +131,30 @@ lemma pgf_le_one [IsProbabilityMeasure μ] (hX : Measurable X) (ht₀ : 0 ≤ t)
   calc pgf X μ t ≤ pgf X μ 1 := pgf_mono hX ht₀ ht₁ le_rfl
     _ = 1 := pgf_one
 
+/-- For an `ℕ`-valued random variable, the integral of `f ∘ X` is the sum of `f` weighted by
+the point masses of `X`. -/
+lemma hasSum_integral_comp (hX : Measurable X) {f : ℕ → ℝ}
+    (h_int : Integrable (fun ω => f (X ω)) μ) :
+    HasSum (fun n => μ.real (X ⁻¹' {n}) * f n) (μ[fun ω => f (X ω)]) := by
+  have h_int' : Integrable f (μ.map X) := by
+    rwa [integrable_map_measure Measurable.of_discrete.aestronglyMeasurable hX.aemeasurable]
+  rw [← integral_map hX.aemeasurable Measurable.of_discrete.aestronglyMeasurable]
+  rw [← Measure.sum_smul_dirac (μ.map X)] at h_int' ⊢
+  refine (hasSum_integral_measure h_int').congr_fun fun n => ?_
+  rw [integral_smul_measure, integral_dirac, smul_eq_mul,
+    Measure.real, Measure.map_apply hX (measurableSet_singleton n)]
+
 /-- Power-series form of the generating function: the point masses of `X` are the
 coefficients of the series summing to `pgf X μ t`. -/
 lemma hasSum_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
-    HasSum (fun n => μ.real (X ⁻¹' {n}) * t ^ n) (pgf X μ t) := by
-  have h_int : Integrable (fun n : ℕ => t ^ n) (μ.map X) := by
-    refine Integrable.mono' (integrable_const 1) Measurable.of_discrete.aestronglyMeasurable ?_
-    filter_upwards with n
-    rw [Real.norm_eq_abs, abs_pow]
-    exact pow_le_one₀ (abs_nonneg t) ht
-  rw [pgf, ← integral_map hX.aemeasurable Measurable.of_discrete.aestronglyMeasurable]
-  rw [← Measure.sum_smul_dirac (μ.map X)] at h_int ⊢
-  refine (hasSum_integral_measure h_int).congr_fun fun n => ?_
-  rw [integral_smul_measure, integral_dirac, smul_eq_mul,
-    Measure.real, Measure.map_apply hX (measurableSet_singleton n)]
+    HasSum (fun n => μ.real (X ⁻¹' {n}) * t ^ n) (pgf X μ t) :=
+  hasSum_integral_comp hX (f := fun n => t ^ n) (integrable_pow_pgf hX ht)
+
+/-- The mean is the sum of `n` weighted by the point masses. -/
+lemma hasSum_measureReal_mul_nat (hX : Measurable X)
+    (h_int : Integrable (fun ω => (X ω : ℝ)) μ) :
+    HasSum (fun n : ℕ => μ.real (X ⁻¹' {n}) * n) (μ[fun ω => (X ω : ℝ)]) :=
+  hasSum_integral_comp hX (f := fun n => (n : ℝ)) h_int
 
 /-- Power-series form of the generating function:
 `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`. -/
@@ -217,6 +233,39 @@ theorem hasDerivAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| < 1) :
   have hz' : |z| ≤ r := by
     simpa [Real.dist_eq, abs_sub_comm] using (Metric.mem_ball.1 hz).le
   exact pgf_eq_tsum (μ := μ) hX (hz'.trans hr1.le)
+
+/-- **The mean is the left limit of the derivative at `1`.** For an integrable `ℕ`-valued
+random variable, `(pgf X μ)' t → μ[X]` as `t → 1` from the left. This is the first factorial
+moment; the boundary passage is Abel's limit theorem, since `1` sits exactly on the radius of
+convergence. -/
+theorem tendsto_deriv_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X)
+    (h_int : Integrable (fun ω => (X ω : ℝ)) μ) :
+    Tendsto (deriv (pgf X μ)) (𝓝[<] (1 : ℝ)) (𝓝 (μ[fun ω => (X ω : ℝ)])) := by
+  -- Abel's theorem applied to the coefficients `n * P(X = n)`
+  have habel := Real.tendsto_tsum_powerSeries_nhdsWithin_lt
+    (f := fun n : ℕ => μ.real (X ⁻¹' {n}) * n)
+    (hasSum_measureReal_mul_nat hX h_int).tendsto_sum_nat
+  -- on `(0, 1)` that series is `x * (pgf X μ)' x`
+  have hxD : ∀ᶠ x : ℝ in 𝓝[<] (1 : ℝ),
+      (∑' n : ℕ, μ.real (X ⁻¹' {n}) * n * x ^ n) = x * deriv (pgf X μ) x := by
+    filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with x hx
+    have hx1 : |x| < 1 := abs_lt.2 ⟨by linarith [hx.1], hx.2⟩
+    rw [(hasDerivAt_pgf hX hx1).deriv, ← tsum_mul_left]
+    refine tsum_congr fun n => ?_
+    rcases n with _ | m
+    · simp
+    · rw [Nat.add_sub_cancel]
+      ring
+  have hnum : Tendsto (fun x : ℝ => x * deriv (pgf X μ) x) (𝓝[<] (1 : ℝ))
+      (𝓝 (μ[fun ω => (X ω : ℝ)])) := habel.congr' hxD
+  have hid : Tendsto (fun x : ℝ => x) (𝓝[<] (1 : ℝ)) (𝓝 (1 : ℝ)) :=
+    tendsto_id.mono_left nhdsWithin_le_nhds
+  have := hnum.div hid one_ne_zero
+  simp only [div_one] at this
+  refine this.congr' ?_
+  filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with x hx
+  simp only [Pi.div_apply]
+  field_simp [ne_of_gt hx.1]
 
 section Uniqueness
 

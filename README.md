@@ -20,7 +20,10 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 - Main theorems: `hasFPowerSeriesAt_pgf` / `analyticAt_pgf` (near `0` the generating function
   *is* the power series whose coefficients are the point masses),
   `iteratedDeriv_pgf_zero` (**the `n`-th derivative at `0` is `n ! * P(X = n)`**, so the
-  derivatives recover the distribution), **the generating function determines the law**
+  derivatives recover the distribution), `hasDerivAt_pgf` (term-by-term differentiation
+  inside the unit interval), **`tendsto_deriv_pgf_nhdsLT_one`** (the mean as the left limit
+  of the derivative at `1`, through Abel's limit theorem — the first factorial moment),
+  **the generating function determines the law**
   (`map_eq_map_of_pgf_eq`, by the uniqueness of power-series coefficients), the product
   formula for sums of independent variables
   (`IndepFun.pgf_add`, `iIndepFun.pgf_sum`), and the bridge to the moment-generating
