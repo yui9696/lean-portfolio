@@ -8,6 +8,8 @@ import Mathlib.Analysis.Analytic.Uniqueness
 import Mathlib.Analysis.Calculus.FDeriv.Analytic
 import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 import Mathlib.Analysis.Complex.AbelLimit
+import Mathlib.Analysis.Calculus.SmoothSeries
+import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.Probability.Moments.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
 
@@ -162,6 +164,59 @@ theorem tendsto_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X) :
     (hasSum_measureReal_preimage_singleton hX).tendsto_sum_nat).congr' ?_
   filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with t ht
   exact (pgf_eq_tsum hX (abs_le.2 ⟨by linarith [ht.1], ht.2.le⟩)).symm
+
+/-- Inside the open unit interval the generating function may be differentiated term by term:
+`(pgf X μ)' t = ∑' n, μ.real (X ⁻¹' {n}) * n * t ^ (n - 1)`. -/
+theorem hasDerivAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| < 1) :
+    HasDerivAt (pgf X μ)
+      (∑' n : ℕ, μ.real (X ⁻¹' {n}) * ((n : ℝ) * t ^ (n - 1))) t := by
+  set p : ℕ → ℝ := fun n => μ.real (X ⁻¹' {n}) with hp
+  set M : ℝ := μ.real Set.univ with hM
+  -- work on a ball of radius `r` with `|t| < r < 1`
+  set r : ℝ := (|t| + 1) / 2 with hr
+  have hrpos : 0 < r := by rw [hr]; positivity
+  have htr : |t| < r := by rw [hr]; linarith
+  have hr1 : r < 1 := by rw [hr]; linarith
+  have hM0 : 0 ≤ M := measureReal_nonneg
+  have hpM : ∀ n, |p n| ≤ M := fun n => by
+    rw [hp, abs_of_nonneg measureReal_nonneg]
+    exact measureReal_mono (Set.subset_univ _)
+  -- the bounding series `M * n * r ^ (n - 1)` is summable
+  have hgeo : Summable fun n : ℕ => (n : ℝ) * r ^ n := by
+    simpa using summable_pow_mul_geometric_of_norm_lt_one (R := ℝ) 1
+      (by rwa [Real.norm_eq_abs, abs_of_nonneg hrpos.le])
+  have key : ∀ n : ℕ, M * ((n : ℝ) * r ^ (n - 1)) = M * r⁻¹ * ((n : ℝ) * r ^ n) := by
+    rintro (_ | m)
+    · simp
+    · rw [Nat.add_sub_cancel, pow_succ]
+      field_simp
+  have hsum : Summable fun n : ℕ => M * ((n : ℝ) * r ^ (n - 1)) := by
+    simp_rw [key]
+    exact hgeo.mul_left _
+  have h0r : (0 : ℝ) ∈ Metric.ball (0 : ℝ) r := Metric.mem_ball_self hrpos
+  have hderiv := hasDerivAt_tsum_of_isPreconnected (u := fun n : ℕ => M * ((n : ℝ) * r ^ (n - 1)))
+    (g := fun n z => p n * z ^ n) (g' := fun n z => p n * ((n : ℝ) * z ^ (n - 1)))
+    hsum Metric.isOpen_ball (convex_ball (0 : ℝ) r).isPreconnected
+    (fun n y _ => (hasDerivAt_pow n y).const_mul (p n))
+    (fun n y hy => by
+      have hy' : |y| ≤ r := by
+        simpa [Real.dist_eq, abs_sub_comm] using (Metric.mem_ball.1 hy).le
+      rw [Real.norm_eq_abs, abs_mul]
+      refine mul_le_mul (hpM n) ?_ (abs_nonneg _) hM0
+      rw [abs_mul, Nat.abs_cast, abs_pow]
+      exact mul_le_mul_of_nonneg_left
+        (pow_le_pow_left₀ (abs_nonneg y) hy' _) (Nat.cast_nonneg n))
+    h0r
+    (summable_of_ne_finset_zero (s := {0}) (fun n hn => by
+      simp only [Finset.mem_singleton] at hn
+      simp [zero_pow hn]))
+    (by simpa [Real.dist_eq] using htr)
+  refine hderiv.congr_of_eventuallyEq ?_
+  have htball : t ∈ Metric.ball (0 : ℝ) r := by simpa [Real.dist_eq] using htr
+  filter_upwards [Metric.isOpen_ball.mem_nhds htball] with z hz
+  have hz' : |z| ≤ r := by
+    simpa [Real.dist_eq, abs_sub_comm] using (Metric.mem_ball.1 hz).le
+  exact pgf_eq_tsum (μ := μ) hX (hz'.trans hr1.le)
 
 section Uniqueness
 
