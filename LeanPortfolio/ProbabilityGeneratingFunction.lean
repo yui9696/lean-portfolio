@@ -7,6 +7,7 @@ import Mathlib.Analysis.Analytic.OfScalars
 import Mathlib.Analysis.Analytic.Uniqueness
 import Mathlib.Analysis.Calculus.FDeriv.Analytic
 import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+import Mathlib.Analysis.Complex.AbelLimit
 import Mathlib.Probability.Moments.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
 
@@ -43,7 +44,7 @@ open MeasureTheory Filter Finset Real Nat
 
 noncomputable section
 
-open scoped MeasureTheory ProbabilityTheory ENNReal NNReal
+open scoped MeasureTheory ProbabilityTheory ENNReal NNReal Topology
 
 namespace ProbabilityTheory
 
@@ -68,6 +69,9 @@ lemma pgf_zero (hX : Measurable X) : pgf X μ 0 = μ.real (X ⁻¹' {0}) := by
 
 @[simp]
 lemma pgf_one [IsProbabilityMeasure μ] : pgf X μ 1 = 1 := by simp [pgf]
+
+/-- Without a probability assumption, the value at `1` is the total mass. -/
+lemma pgf_one' : pgf X μ 1 = μ.real Set.univ := by simp [pgf]
 
 lemma pgf_const [IsProbabilityMeasure μ] (c : ℕ) : pgf (fun _ => c) μ t = t ^ c := by
   simp [pgf]
@@ -144,6 +148,21 @@ lemma summable_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
     Summable fun n => μ.real (X ⁻¹' {n}) * t ^ n :=
   (hasSum_pgf hX ht).summable
 
+/-- The point masses of an `ℕ`-valued random variable sum to the total mass. -/
+lemma hasSum_measureReal_preimage_singleton [IsFiniteMeasure μ] (hX : Measurable X) :
+    HasSum (fun n => μ.real (X ⁻¹' {n})) (μ.real Set.univ) := by
+  simpa [pgf_one'] using hasSum_pgf (μ := μ) (t := 1) hX (by norm_num)
+
+/-- **Abel's limit theorem for generating functions.** `pgf X μ` is continuous at `1` from the
+left; the limit is the total mass, which is `1` for a probability measure. -/
+theorem tendsto_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X) :
+    Tendsto (pgf X μ) (𝓝[<] (1 : ℝ)) (𝓝 (μ.real Set.univ)) := by
+  refine (Real.tendsto_tsum_powerSeries_nhdsWithin_lt
+    (f := fun n => μ.real (X ⁻¹' {n}))
+    (hasSum_measureReal_preimage_singleton hX).tendsto_sum_nat).congr' ?_
+  filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with t ht
+  exact (pgf_eq_tsum hX (abs_le.2 ⟨by linarith [ht.1], ht.2.le⟩)).symm
+
 section Uniqueness
 
 open FormalMultilinearSeries
@@ -184,8 +203,7 @@ theorem iteratedDeriv_pgf_zero [IsFiniteMeasure μ] (hX : Measurable X) (n : ℕ
   obtain ⟨r, hr⟩ := hasFPowerSeriesAt_pgf (μ := μ) hX
   rw [iteratedDeriv_eq_iteratedFDeriv, ← hr.factorial_smul 1 n, nsmul_eq_mul]
   congr 1
-  simpa using congrArg (fun x : ℝ => (n ! : ℝ) * x)
-    (coeff_ofScalars (𝕜 := ℝ) (p := fun n => μ.real (X ⁻¹' {n})) (n := n))
+  simp [coeff_ofScalars (𝕜 := ℝ) (p := fun n => μ.real (X ⁻¹' {n})) (n := n)]
 
 /-- **The probability generating function determines the law.** If the generating functions
 of two `ℕ`-valued random variables with respect to finite measures agree on `[-1, 1]`, then
