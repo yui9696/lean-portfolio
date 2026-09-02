@@ -38,8 +38,16 @@
   球上で使い M·n·r^(n-1) で優級数評価)③Abel を係数 n·P(X=n) に当て、
   **∑ n p_n x^n = x·(pgf)'(x) の恒等式で添字ずらしを回避**(x で割って終わり)
   ④`tendsto_pgf_nhdsLT_one`(左連続性)も同じ Abel から
-- 未着手の残り: **第 n 階乗モーメント E[X(X−1)…(X−n+1)]**(n≥2)。1 階の議論を反復すれば
-  出るはずだが、n 階導関数の級数表示を作る手間がある。値が ∞ の場合の扱いも設計が要る
+- **★2026-09-02: 第 k 階乗モーメントを一般 k で完成** `tendsto_iteratedDeriv_pgf_nhdsLT_one`:
+  X.descFactorial k が可積分なら t→1⁻ で (pgf)⁽ᵏ⁾(t) → μ[X.descFactorial k]。
+  設計 = `pgfDeriv k`(k 階の項別微分級数)を定義 → `hasDerivAt_pgfDeriv`(k→k+1 の 1 段。
+  優級数は M·r⁻¹^(k+1)·n^(k+1)·rⁿ、`Nat.descFactorial_le_pow` と
+  `r^(n-(k+1)) ≤ r⁻¹^(k+1)·rⁿ` で押さえる)→ `iteratedDeriv_pgf`(帰納で iteratedDeriv と一致)
+  → Abel。**t^k を括り出す恒等式で添字ずらしを回避**(k=1 のときと同じ定石)。
+  k=1 の `hasDerivAt_pgf`/`tendsto_deriv_pgf_nhdsLT_one` は一般版の系に書き換え、
+  重複していた優級数評価 60 行を削除した
+- 未着手の残り: 値が ∞ になる場合(可積分でないとき)の扱い。単調収束で
+  「両辺 +∞」まで言う版は未設計。あとは分散 Var = pgf''(1)+pgf'(1)−pgf'(1)² の系
 - Mathlib PR 化する場合の置き場: `Mathlib/Probability/Moments/Generating.lean` 相当
 
 ## 第3候補(大物・単独では2週間で終わらない)

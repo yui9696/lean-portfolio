@@ -37,10 +37,13 @@ function `mgf`.
   `n ! * μ.real (X ⁻¹' {n})`, so the derivatives at `0` recover the distribution.
 * `ProbabilityTheory.hasDerivAt_pgf`: inside the open unit interval the series may be
   differentiated term by term.
+* `ProbabilityTheory.pgfDeriv` and `ProbabilityTheory.iteratedDeriv_pgf`: the `k`-th termwise
+  derivative of the series, and the fact that it *is* the `k`-th derivative on `(-1, 1)`.
 * `ProbabilityTheory.tendsto_pgf_nhdsLT_one` and
-  `ProbabilityTheory.tendsto_deriv_pgf_nhdsLT_one`: the boundary results at `1`, via Abel's
-  limit theorem — the generating function is left-continuous at `1`, and its derivative
-  tends to the mean `μ[X]`.
+  `ProbabilityTheory.tendsto_iteratedDeriv_pgf_nhdsLT_one`: the boundary results at `1`, via
+  Abel's limit theorem — the generating function is left-continuous at `1`, and its `k`-th
+  derivative tends to the `k`-th factorial moment `μ[X.descFactorial k]`.
+  `ProbabilityTheory.tendsto_deriv_pgf_nhdsLT_one` is the `k = 1` case, the mean.
 * `ProbabilityTheory.map_eq_map_of_pgf_eq`: the generating function determines the law —
   if two generating functions agree on `[-1, 1]`, the distributions coincide.
 * `ProbabilityTheory.IndepFun.pgf_add`: if `X` and `Y` are independent then
@@ -181,14 +184,28 @@ theorem tendsto_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X) :
   filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with t ht
   exact (pgf_eq_tsum hX (abs_le.2 ⟨by linarith [ht.1], ht.2.le⟩)).symm
 
-/-- Inside the open unit interval the generating function may be differentiated term by term:
-`(pgf X μ)' t = ∑' n, μ.real (X ⁻¹' {n}) * n * t ^ (n - 1)`. -/
-theorem hasDerivAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| < 1) :
-    HasDerivAt (pgf X μ)
-      (∑' n : ℕ, μ.real (X ⁻¹' {n}) * ((n : ℝ) * t ^ (n - 1))) t := by
+/-- The `k`-th termwise derivative of the generating series. `pgfDeriv 0 = pgf` and each step
+differentiates the series once; see `hasDerivAt_pgfDeriv` and `iteratedDeriv_pgf`. -/
+def pgfDeriv (k : ℕ) (X : Ω → ℕ) (μ : Measure Ω) (t : ℝ) : ℝ :=
+  ∑' n : ℕ, μ.real (X ⁻¹' {n}) * ((n.descFactorial k : ℝ) * t ^ (n - k))
+
+lemma pgfDeriv_zero_eq [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| ≤ 1) :
+    pgfDeriv 0 X μ t = pgf X μ t := by
+  rw [pgfDeriv, pgf_eq_tsum hX ht]
+  exact tsum_congr fun n => by simp
+
+/-- The dominating series used for term-by-term differentiation on a ball of radius `r < 1`. -/
+private lemma summable_descFactorial_bound {r : ℝ} (hr0 : 0 < r) (hr1 : r < 1) (M : ℝ) (k : ℕ) :
+    Summable fun n : ℕ => M * (r⁻¹ ^ k * ((n : ℝ) ^ k * r ^ n)) :=
+  (((summable_pow_mul_geometric_of_norm_lt_one (R := ℝ) k
+    (by rwa [Real.norm_eq_abs, abs_of_nonneg hr0.le])).mul_left _).mul_left _)
+
+/-- Inside the open unit interval the generating series may be differentiated term by term:
+one differentiation turns `pgfDeriv k` into `pgfDeriv (k + 1)`. -/
+theorem hasDerivAt_pgfDeriv [IsFiniteMeasure μ] (hX : Measurable X) (k : ℕ) (ht : |t| < 1) :
+    HasDerivAt (pgfDeriv k X μ) (pgfDeriv (k + 1) X μ t) t := by
   set p : ℕ → ℝ := fun n => μ.real (X ⁻¹' {n}) with hp
   set M : ℝ := μ.real Set.univ with hM
-  -- work on a ball of radius `r` with `|t| < r < 1`
   set r : ℝ := (|t| + 1) / 2 with hr
   have hrpos : 0 < r := by rw [hr]; positivity
   have htr : |t| < r := by rw [hr]; linarith
@@ -197,75 +214,119 @@ theorem hasDerivAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| < 1) :
   have hpM : ∀ n, |p n| ≤ M := fun n => by
     rw [hp, abs_of_nonneg measureReal_nonneg]
     exact measureReal_mono (Set.subset_univ _)
-  -- the bounding series `M * n * r ^ (n - 1)` is summable
-  have hgeo : Summable fun n : ℕ => (n : ℝ) * r ^ n := by
-    simpa using summable_pow_mul_geometric_of_norm_lt_one (R := ℝ) 1
-      (by rwa [Real.norm_eq_abs, abs_of_nonneg hrpos.le])
-  have key : ∀ n : ℕ, M * ((n : ℝ) * r ^ (n - 1)) = M * r⁻¹ * ((n : ℝ) * r ^ n) := by
-    rintro (_ | m)
-    · simp
-    · rw [Nat.add_sub_cancel, pow_succ]
-      field_simp
-  have hsum : Summable fun n : ℕ => M * ((n : ℝ) * r ^ (n - 1)) := by
-    simp_rw [key]
-    exact hgeo.mul_left _
-  have h0r : (0 : ℝ) ∈ Metric.ball (0 : ℝ) r := Metric.mem_ball_self hrpos
-  have hderiv := hasDerivAt_tsum_of_isPreconnected (u := fun n : ℕ => M * ((n : ℝ) * r ^ (n - 1)))
-    (g := fun n z => p n * z ^ n) (g' := fun n z => p n * ((n : ℝ) * z ^ (n - 1)))
-    hsum Metric.isOpen_ball (convex_ball (0 : ℝ) r).isPreconnected
-    (fun n y _ => (hasDerivAt_pow n y).const_mul (p n))
+  -- `r ^ (n - (k+1)) ≤ r⁻¹ ^ (k+1) * r ^ n` for every `n`
+  have hpow : ∀ n : ℕ, r ^ (n - (k + 1)) ≤ r⁻¹ ^ (k + 1) * r ^ n := by
+    intro n
+    rcases le_or_gt (k + 1) n with h | h
+    · rw [inv_pow, inv_mul_eq_div, le_div_iff₀ (by positivity), ← pow_add]
+      rw [Nat.sub_add_cancel h]
+    · rw [Nat.sub_eq_zero_of_le h.le, pow_zero, inv_pow, inv_mul_eq_div, le_div_iff₀ (by positivity),
+        one_mul]
+      exact pow_le_pow_of_le_one hrpos.le hr1.le h.le
+  have hderiv := hasDerivAt_tsum_of_isPreconnected
+    (u := fun n : ℕ => M * (r⁻¹ ^ (k + 1) * ((n : ℝ) ^ (k + 1) * r ^ n)))
+    (g := fun n z => p n * ((n.descFactorial k : ℝ) * z ^ (n - k)))
+    (g' := fun n z => p n * ((n.descFactorial (k + 1) : ℝ) * z ^ (n - (k + 1))))
+    (summable_descFactorial_bound hrpos hr1 M (k + 1)) Metric.isOpen_ball
+    (convex_ball (0 : ℝ) r).isPreconnected
+    (fun n y _ => by
+      have h := ((hasDerivAt_pow (n - k) y).const_mul ((n.descFactorial k : ℝ))).const_mul (p n)
+      have heq : p n * ((n.descFactorial k : ℝ) * (((n - k : ℕ) : ℝ) * y ^ (n - k - 1)))
+          = p n * ((n.descFactorial (k + 1) : ℝ) * y ^ (n - (k + 1))) := by
+        rw [Nat.descFactorial_succ, Nat.cast_mul, Nat.sub_sub]
+        ring
+      rwa [heq] at h)
     (fun n y hy => by
       have hy' : |y| ≤ r := by
         simpa [Real.dist_eq, abs_sub_comm] using (Metric.mem_ball.1 hy).le
-      rw [Real.norm_eq_abs, abs_mul]
-      refine mul_le_mul (hpM n) ?_ (abs_nonneg _) hM0
-      rw [abs_mul, Nat.abs_cast, abs_pow]
-      exact mul_le_mul_of_nonneg_left
-        (pow_le_pow_left₀ (abs_nonneg y) hy' _) (Nat.cast_nonneg n))
-    h0r
-    (summable_of_ne_finset_zero (s := {0}) (fun n hn => by
-      simp only [Finset.mem_singleton] at hn
-      simp [zero_pow hn]))
+      rw [Real.norm_eq_abs, abs_mul, abs_mul, Nat.abs_cast, abs_pow]
+      have h1 : |y| ^ (n - (k + 1)) ≤ r ^ (n - (k + 1)) :=
+        pow_le_pow_left₀ (abs_nonneg y) hy' _
+      have h2 : ((n.descFactorial (k + 1) : ℝ)) ≤ (n : ℝ) ^ (k + 1) := by
+        exact_mod_cast Nat.descFactorial_le_pow n (k + 1)
+      calc |p n| * ((n.descFactorial (k + 1) : ℝ) * |y| ^ (n - (k + 1)))
+          ≤ M * ((n : ℝ) ^ (k + 1) * (r⁻¹ ^ (k + 1) * r ^ n)) := by
+            refine mul_le_mul (hpM n) (mul_le_mul h2 (h1.trans (hpow n)) (by positivity)
+              (by positivity)) (by positivity) hM0
+        _ = M * (r⁻¹ ^ (k + 1) * ((n : ℝ) ^ (k + 1) * r ^ n)) := by ring)
+    (Metric.mem_ball_self hrpos)
+    (summable_of_ne_finset_zero (s := Finset.range (k + 1)) (fun n hn => by
+      simp only [Finset.mem_range, not_lt] at hn
+      have : (0 : ℝ) ^ (n - k) = 0 := zero_pow (by omega)
+      simp [this]))
     (by simpa [Real.dist_eq] using htr)
-  refine hderiv.congr_of_eventuallyEq ?_
-  have htball : t ∈ Metric.ball (0 : ℝ) r := by simpa [Real.dist_eq] using htr
-  filter_upwards [Metric.isOpen_ball.mem_nhds htball] with z hz
-  have hz' : |z| ≤ r := by
-    simpa [Real.dist_eq, abs_sub_comm] using (Metric.mem_ball.1 hz).le
-  exact pgf_eq_tsum (μ := μ) hX (hz'.trans hr1.le)
+  exact hderiv
 
-/-- **The mean is the left limit of the derivative at `1`.** For an integrable `ℕ`-valued
-random variable, `(pgf X μ)' t → μ[X]` as `t → 1` from the left. This is the first factorial
-moment; the boundary passage is Abel's limit theorem, since `1` sits exactly on the radius of
-convergence. -/
-theorem tendsto_deriv_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X)
-    (h_int : Integrable (fun ω => (X ω : ℝ)) μ) :
-    Tendsto (deriv (pgf X μ)) (𝓝[<] (1 : ℝ)) (𝓝 (μ[fun ω => (X ω : ℝ)])) := by
-  -- Abel's theorem applied to the coefficients `n * P(X = n)`
+/-- On the open unit interval the `k`-th derivative of the generating function is the `k`-th
+termwise derivative of its series. -/
+theorem iteratedDeriv_pgf [IsFiniteMeasure μ] (hX : Measurable X) (k : ℕ) (ht : |t| < 1) :
+    iteratedDeriv k (pgf X μ) t = pgfDeriv k X μ t := by
+  induction k generalizing t with
+  | zero => simpa using (pgfDeriv_zero_eq (μ := μ) hX ht.le).symm
+  | succ k ih =>
+    have hball : iteratedDeriv k (pgf X μ) =ᶠ[𝓝 t] pgfDeriv k X μ := by
+      filter_upwards [Metric.isOpen_ball.mem_nhds
+        (show t ∈ Metric.ball (0 : ℝ) 1 by simpa [Real.dist_eq] using ht)] with z hz
+      exact ih (by simpa [Real.dist_eq, abs_sub_comm] using Metric.mem_ball.1 hz)
+    rw [iteratedDeriv_succ, hball.deriv_eq, (hasDerivAt_pgfDeriv hX k ht).deriv]
+
+/-- Inside the open unit interval the generating function may be differentiated term by term:
+`(pgf X μ)' t = ∑' n, μ.real (X ⁻¹' {n}) * (n * t ^ (n - 1))`. This is the `k = 1` case of
+`hasDerivAt_pgfDeriv`. -/
+theorem hasDerivAt_pgf [IsFiniteMeasure μ] (hX : Measurable X) (ht : |t| < 1) :
+    HasDerivAt (pgf X μ) (pgfDeriv 1 X μ t) t := by
+  refine (hasDerivAt_pgfDeriv hX 0 ht).congr_of_eventuallyEq ?_
+  filter_upwards [Metric.isOpen_ball.mem_nhds
+    (show t ∈ Metric.ball (0 : ℝ) 1 by simpa [Real.dist_eq] using ht)] with z hz
+  exact (pgfDeriv_zero_eq (μ := μ) hX
+    (by simpa [Real.dist_eq, abs_sub_comm] using (Metric.mem_ball.1 hz).le)).symm
+/-- **The `k`-th factorial moment is the left limit of the `k`-th derivative at `1`.** If
+`X (X-1) ⋯ (X-k+1)` is integrable, then `(pgf X μ)⁽ᵏ⁾ t → μ[X.descFactorial k]` as `t → 1` from
+the left. For `k = 1` this is `tendsto_deriv_pgf_nhdsLT_one`. -/
+theorem tendsto_iteratedDeriv_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X) (k : ℕ)
+    (h_int : Integrable (fun ω => ((X ω).descFactorial k : ℝ)) μ) :
+    Tendsto (iteratedDeriv k (pgf X μ)) (𝓝[<] (1 : ℝ))
+      (𝓝 (μ[fun ω => ((X ω).descFactorial k : ℝ)])) := by
+  -- Abel's theorem applied to the coefficients `descFactorial n k * P(X = n)`
   have habel := Real.tendsto_tsum_powerSeries_nhdsWithin_lt
-    (f := fun n : ℕ => μ.real (X ⁻¹' {n}) * n)
-    (hasSum_measureReal_mul_nat hX h_int).tendsto_sum_nat
-  -- on `(0, 1)` that series is `x * (pgf X μ)' x`
+    (f := fun n : ℕ => μ.real (X ⁻¹' {n}) * (n.descFactorial k : ℝ))
+    (hasSum_integral_comp hX (f := fun n => (n.descFactorial k : ℝ)) h_int).tendsto_sum_nat
+  -- on `(0, 1)` that series is `t ^ k * (pgf X μ)⁽ᵏ⁾ t`
   have hxD : ∀ᶠ x : ℝ in 𝓝[<] (1 : ℝ),
-      (∑' n : ℕ, μ.real (X ⁻¹' {n}) * n * x ^ n) = x * deriv (pgf X μ) x := by
+      (∑' n : ℕ, μ.real (X ⁻¹' {n}) * (n.descFactorial k : ℝ) * x ^ n)
+        = x ^ k * iteratedDeriv k (pgf X μ) x := by
     filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with x hx
     have hx1 : |x| < 1 := abs_lt.2 ⟨by linarith [hx.1], hx.2⟩
-    rw [(hasDerivAt_pgf hX hx1).deriv, ← tsum_mul_left]
+    rw [iteratedDeriv_pgf hX k hx1, pgfDeriv, ← tsum_mul_left]
     refine tsum_congr fun n => ?_
-    rcases n with _ | m
-    · simp
-    · rw [Nat.add_sub_cancel]
+    rcases le_or_gt k n with h | h
+    · have hxx : x ^ k * x ^ (n - k) = x ^ n := by
+        rw [← pow_add, Nat.add_sub_cancel' h]
+      rw [← hxx]
       ring
-  have hnum : Tendsto (fun x : ℝ => x * deriv (pgf X μ) x) (𝓝[<] (1 : ℝ))
-      (𝓝 (μ[fun ω => (X ω : ℝ)])) := habel.congr' hxD
-  have hid : Tendsto (fun x : ℝ => x) (𝓝[<] (1 : ℝ)) (𝓝 (1 : ℝ)) :=
-    tendsto_id.mono_left nhdsWithin_le_nhds
-  have := hnum.div hid one_ne_zero
+    · rw [Nat.descFactorial_eq_zero_iff_lt.2 h]
+      simp
+  have hnum : Tendsto (fun x : ℝ => x ^ k * iteratedDeriv k (pgf X μ) x) (𝓝[<] (1 : ℝ))
+      (𝓝 (μ[fun ω => ((X ω).descFactorial k : ℝ)])) := habel.congr' hxD
+  have hden : Tendsto (fun x : ℝ => x ^ k) (𝓝[<] (1 : ℝ)) (𝓝 (1 : ℝ)) := by
+    have h : Tendsto (fun x : ℝ => x ^ k) (𝓝[<] (1 : ℝ)) (𝓝 ((1 : ℝ) ^ k)) :=
+      (tendsto_id.mono_left nhdsWithin_le_nhds).pow k
+    simpa using h
+  have := hnum.div hden one_ne_zero
   simp only [div_one] at this
   refine this.congr' ?_
   filter_upwards [Ioo_mem_nhdsLT (by norm_num : (0 : ℝ) < 1)] with x hx
   simp only [Pi.div_apply]
-  field_simp [ne_of_gt hx.1]
+  field_simp [pow_ne_zero k (ne_of_gt hx.1)]
+
+/-- **The mean is the left limit of the derivative at `1`.** The `k = 1` case of
+`tendsto_iteratedDeriv_pgf_nhdsLT_one`: for an integrable `ℕ`-valued random variable,
+`(pgf X μ)' t → μ[X]` as `t → 1` from the left. -/
+theorem tendsto_deriv_pgf_nhdsLT_one [IsFiniteMeasure μ] (hX : Measurable X)
+    (h_int : Integrable (fun ω => (X ω : ℝ)) μ) :
+    Tendsto (deriv (pgf X μ)) (𝓝[<] (1 : ℝ)) (𝓝 (μ[fun ω => (X ω : ℝ)])) := by
+  have h := tendsto_iteratedDeriv_pgf_nhdsLT_one hX 1 (by simpa using h_int)
+  simpa [iteratedDeriv_one] using h
 
 section Uniqueness
 
