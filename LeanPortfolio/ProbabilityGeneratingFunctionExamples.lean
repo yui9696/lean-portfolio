@@ -58,7 +58,7 @@ theorem pgf_geometricMeasure {p : unitInterval} (hp : p ≠ 0) {t : ℝ} (ht : |
     calc (1 - (p : ℝ)) * |t| ≤ (1 - (p : ℝ)) * 1 :=
           mul_le_mul_of_nonneg_left ht (by linarith [p.2.2])
       _ < 1 := by linarith
-  rw [pgf_eq_tsum measurable_id ht]
+  rw [pgf_eq_tsum aemeasurable_id]
   simp only [Set.preimage_id, geometricMeasure_real_singleton hp]
   rw [show (fun n : ℕ => ((1 - (p : ℝ)) ^ n * p) * t ^ n) = fun n : ℕ =>
         (p : ℝ) * ((1 - (p : ℝ)) * t) ^ n from funext fun n => by rw [mul_pow]; ring,

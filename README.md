@@ -17,15 +17,16 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 - API: values at `0` and `1`, nonnegativity, monotonicity and boundedness on `[0, 1]`,
   integrability of the integrand on `[-1, 1]`, congruence lemmas (a.e. equality and
   `IdentDistrib`), the power-series form `pgf X μ t = ∑' n, μ.real (X ⁻¹' {n}) * t ^ n`.
-- Main theorems: `hasFPowerSeriesAt_pgf` / `analyticAt_pgf` (near `0` the generating function
-  *is* the power series whose coefficients are the point masses),
+- Main theorems: `hasFPowerSeriesOnBall_pgf` / `analyticAt_pgf` (on the open unit ball the
+  generating function *is* the power series whose coefficients are the point masses),
   `iteratedDeriv_pgf_zero` (**the `n`-th derivative at `0` is `n ! * P(X = n)`**, so the
   derivatives recover the distribution), `hasDerivAt_pgf` (term-by-term differentiation
   inside the unit interval), **`tendsto_iteratedDeriv_pgf_nhdsLT_one`** (**the `k`-th
   factorial moment** as the left limit of the `k`-th derivative at `1`, through Abel's limit
   theorem; `tendsto_deriv_pgf_nhdsLT_one` is the `k = 1` case, the mean),
   **the generating function determines the law**
-  (`map_eq_map_of_pgf_eq`, by the uniqueness of power-series coefficients), the product
+  (`map_eq_of_pgf_frequently_eq` and `map_eq_of_pgf_eq`, by the uniqueness of power-series
+  coefficients), the product
   formula for sums of independent variables
   (`IndepFun.pgf_add`, `iIndepFun.pgf_sum`), and the bridge to the moment-generating
   function (`pgf_exp_eq_mgf`: `pgf X μ (exp s) = mgf X μ s`).
@@ -37,16 +38,16 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
 
 ## First target
 
-**Simultaneous diagonalization of two real quadratic forms** — for matrices, if `A` is positive definite and `B` is symmetric, there is an invertible `P` with `Pᵀ A P = 1` and `Pᵀ B P` diagonal.
+**Simultaneous diagonalization of two Hermitian forms** — for matrices over `ℝ` or `ℂ` (any `RCLike 𝕜`), if `A` is positive definite and `B` is Hermitian, there is a `P` with `Pᴴ A P = 1` and `Pᴴ B P` diagonal with real entries; such a `P` is automatically invertible.
 
 - [`LeanPortfolio/SimultaneousDiagonalization.lean`](LeanPortfolio/SimultaneousDiagonalization.lean)
 - Status: **fully proved** — no `sorry`; `#print axioms` reports only
   `propext`, `Classical.choice`, `Quot.sound`.
 - **Submitted to Mathlib:** [leanprover-community/mathlib4#42931](https://github.com/leanprover-community/mathlib4/pull/42931)
-- Also proved: the quadratic-form phrasing (one change of variables sends `A` to `∑ xᵢ ^ 2`
-  and `B` to `∑ dᵢ * xᵢ ^ 2`), and positivity of the `dᵢ` when `B` is positive definite too.
+- Also proved: the columns of `P` solve the generalized eigenvalue problem `B P = A P D`, and
+  each `dᵢ` is a root of `det (B - μ A)`.
 - Proof route: conjugating by the inverse of `CFC.sqrt A` reduces `A` to the identity,
-  then the real spectral theorem diagonalizes the transformed `B`.
+  then the spectral theorem diagonalizes the transformed `B`.
 - Intended endpoint: a Mathlib pull request.
 
 ## Building
