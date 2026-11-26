@@ -48,7 +48,6 @@ Targets are chosen from the [missing undergraduate mathematics in Mathlib](https
   each `dᵢ` is a root of `det (B - μ A)`.
 - Proof route: conjugating by the inverse of `CFC.sqrt A` reduces `A` to the identity,
   then the spectral theorem diagonalizes the transformed `B`.
-- Intended endpoint: a Mathlib pull request.
 
 ## Building
 
